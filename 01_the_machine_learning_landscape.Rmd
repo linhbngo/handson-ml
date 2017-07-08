@@ -1,0 +1,112 @@
+---
+title: "Chapter 1 - The Machine Learning landscape"
+output: html_notebook
+---
+
+## Load and prepare Life satisfaction data
+
+```{r}
+library(tidyverse)
+
+datapath <- 'datasets_R/lifesat/'
+
+oecd_bli <- read.csv(file.path(datapath, 'oecd_bli_2015.csv'))
+oecd_bli <- subset(oecd_bli, oecd_bli$INEQUALITY == "TOT")
+
+oecd_names <- names(oecd_bli)
+oecd_names_drop <- oecd_names[!oecd_names %in% c('Country','Indicator','Value')]
+
+oecd_bli <- reshape(oecd_bli,
+                      idvar = 'Country', 
+                      timevar = 'Indicator',
+                      drop = oecd_names_drop,
+                      direction = 'wide')
+
+oecd_names <- names(oecd_bli)
+
+oecd_new_names <- unlist(lapply(oecd_names, function(x) {
+  name_list <- strsplit(x, '.', fixed = TRUE)[[1]]
+  if (length(name_list) == 1){
+    name_list[1]
+  } else {
+    name_list[2]
+  }
+}))
+
+names(oecd_bli) <- oecd_new_names
+
+oecd_bli[,2:ncol(oecd_bli)] <- oecd_bli[,order(names(oecd_bli))] %>% select(-Country)
+names(oecd_bli)[2:ncol(oecd_bli)] <-sort(names(oecd_bli)[2:ncol(oecd_bli)])
+
+head(oecd_bli, n = 2)
+```
+
+```{r}
+head(oecd_bli[,c('Country','Life satisfaction')])
+```
+
+## Load and prepare GDP per capita data
+
+```{r}
+gdp_per_capita <- read.csv(file.path(datapath, "gdp_per_capita.csv"), sep='\t', 
+                           stringsAsFactors = FALSE)
+names(gdp_per_capita) <- replace(names(gdp_per_capita), names(gdp_per_capita)=='X2015', 'GDP.per.capita')
+```
+
+```{r}
+full_country_stats <- merge(oecd_bli, gdp_per_capita, by.x='Country', by.y='Country', stringsAsFactor = FALSE)
+full_country_stats$GDP.per.capita <- unlist(lapply(full_country_stats$GDP.per.capita,
+                                                   function(x){as.numeric(gsub(',','',x))}))
+full_country_stats <- full_country_stats[order(full_country_stats$GDP.per.capita),]
+head(full_country_stats, n = 10)
+```
+
+```{r}
+full_country_stats %>%
+  filter(Country == 'United States') %>%
+  select (GDP.per.capita, `Life satisfaction`)
+```
+
+```{r}
+remove_indices <- c(0,1,6,8,33,34,35) + 1 # R starts indices at 1 instead of 0
+keep_indices <- seq(1,36)[!(seq(1,36) %in% remove_indices)]
+
+sample_data <- full_country_stats[keep_indices, c('Country','GDP.per.capita','Life satisfaction')]
+missing_data <- full_country_stats[remove_indices, c('Country','GDP.per.capita','Life satisfaction')]
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
